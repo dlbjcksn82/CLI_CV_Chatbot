@@ -7,31 +7,44 @@ DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
 
 # Load the model & tokenizer
 print("Starting Code")
-MODEL_NAME = "google/gemma-3-1b-pt"
+MODEL_NAME = "google/gemma-2-2b-it"
 print("Loading Tokenizer")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
 print("Loading Model")
-model = AutoModelForCausalLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float32)
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_NAME,
+    torch_dtype=torch.float16,
+    trust_remote_code=True
+    )
 model.to(DEVICE)
 print("Model Loaded")
-
-
 
 
 # Function to generate text
 def chat_with_gemma(prompt):
     print("Getting a response from the LLM......")
-    inputs = tokenizer(prompt, return_tensors="pt").to(DEVICE)
+    # included prompt engineering to get better responses
+    system_prompt = """You are an AI assistant trained to provide detailed and accurate responses. 
+    Always give structured, helpful, and relevant answers to user queries.
+    If you don't know something, say you don't know instead of making up information.
+    """
+    full_prompt = f"{system_prompt}\nUser: {prompt}\nAI:"
+
+    inputs = tokenizer(full_prompt, return_tensors="pt").to(DEVICE)
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
-            max_length=150,
+            max_new_tokens=100,
             do_sample=True,
-            temperature=0.5,  # controls randomness
-            top_p=0.9,  # nucleus sampling to balance diversity
+            temperature=0.3,  # controls randomness
+            top_p=0.8,  # improves coherence
             repetition_penalty=1.2  # Penalizes word repetition
             )
     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    # extract only the AI's response by splitting on "AI:"
+    if "AI:" in response:
+        response = response.split("AI:")[-1].strip()
+
     print("\nGemma's Response:\n", response)
 
 
