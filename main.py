@@ -19,6 +19,8 @@ model = AutoModelForCausalLM.from_pretrained(
 model.to(DEVICE)
 print("Model Loaded")
 
+# Adding chat history to the bot
+chat_history = []
 
 # Function to generate text
 def chat_with_gemma(prompt):
@@ -28,7 +30,10 @@ def chat_with_gemma(prompt):
     Always give structured, helpful, and relevant answers to user queries.
     If you don't know something, say you don't know instead of making up information.
     """
-    full_prompt = f"{system_prompt}\nUser: {prompt}\nAI:"
+
+    # keep last 3 exchanges in the prompt to aviod making the prompt too long
+    history_text = "\n".join(chat_history[-6:]) # only keeps last 3 exchanges (6 messages user + AI)
+    full_prompt = f"{system_prompt}\n{history_text}\nUser: {prompt}\nAI:"
 
     inputs = tokenizer(full_prompt, return_tensors="pt").to(DEVICE)
     with torch.no_grad():
@@ -44,7 +49,8 @@ def chat_with_gemma(prompt):
     # extract only the AI's response by splitting on "AI:"
     if "AI:" in response:
         response = response.split("AI:")[-1].strip()
-
+    chat_history.append(f"User: {prompt}")
+    chat_history.append(f"AI: {response}")
     print("\nGemma's Response:\n", response)
 
 
