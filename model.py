@@ -5,8 +5,12 @@ from langchain_huggingface.llms import HuggingFacePipeline
 MODEL_NAME = "google/gemma-2-2b-it"
 DEVICE = "mps" if torch.backends.mps.is_available() else "cpu"
 
+
 def load_llm():
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(
+        MODEL_NAME,
+        trust_remote_code=True
+    )
     print("Loading Model")
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME,

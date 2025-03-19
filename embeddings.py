@@ -1,18 +1,24 @@
 import numpy as np
-import pickle, faiss, pypdf
+import pickle
+import faiss
+import pypdf
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
-embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+embedding_model = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
+)
+
 
 def extract_text_from_pdf(pdf_path):
-    #Open the PDF File
+    # Open the PDF File
     pdf_reader = pypdf.PdfReader(pdf_path)
     text = ""
     for page in pdf_reader.pages:
         text += page.extract_text() + "\n"
     return text.strip()
+
 
 def split_text_into_chuncks(cv_text, chunk_size=1024, chunk_overlap=64):
     text_splitter = RecursiveCharacterTextSplitter(
@@ -20,6 +26,7 @@ def split_text_into_chuncks(cv_text, chunk_size=1024, chunk_overlap=64):
         chunk_overlap=chunk_overlap
     )
     return text_splitter.split_text(cv_text)
+
 
 def generate_cv_embeddings(cv_path):
     cv_text = extract_text_from_pdf(cv_path)
@@ -31,7 +38,9 @@ def generate_cv_embeddings(cv_path):
 
     return sections, embeddings
 
-def save_faiss_index(cv_sections, cv_embeddings, index_path="data/cv_embeddings.index"):
+
+def save_faiss_index(cv_sections, cv_embeddings,
+                     index_path="data/cv_embeddings.index"):
     cv_embeddings_np = np.array(cv_embeddings, dtype=np.float32)
     index = faiss.IndexFlatL2(cv_embeddings_np.shape[1])
     index.add(cv_embeddings_np)
@@ -39,8 +48,12 @@ def save_faiss_index(cv_sections, cv_embeddings, index_path="data/cv_embeddings.
     with open("data/cv_chunks.pkl", "wb") as f:
         pickle.dump(cv_sections, f)
 
+
 def retrieve_releveant_cv_sections(query, top_k=3):
-    query_embedding = np.array([embedding_model.embed_query(query)], dtype=np.float32)
+    query_embedding = np.array(
+        [embedding_model.embed_query(query)],
+        dtype=np.float32
+    )
 
     # Load Faiss Index
     index = faiss.read_index("cv_embeddings.index")
@@ -57,6 +70,7 @@ def retrieve_releveant_cv_sections(query, top_k=3):
 
     return "\n".join(retrieved_chunks)
 
+
 def load_cv():
     cv_path = "/Users/dj/Documents/CLI_CV_Chatbot/CV_Del_Jackson.pdf"
 
@@ -67,10 +81,9 @@ def load_cv():
     with open("cv_chunks.pkl", "wb") as f:
         pickle.dump(cv_sections, f)
 
-    #create FAISS index
-    embedding_dim = cv_embeddings_np.shape[1] # get size
-    index = faiss.IndexFlatL2(embedding_dim) # L2 distance fro similarity
-    index.add(cv_embeddings_np) # Add embeddings to FAISS
-
+    # create FAISS index
+    embedding_dim = cv_embeddings_np.shape[1]  # get size
+    index = faiss.IndexFlatL2(embedding_dim)  # L2 distance fro similarity
+    index.add(cv_embeddings_np)  # Add embeddings to FAISS
     faiss.write_index(index, "cv_embeddings.index")
-    print(f"CV Loaded to Memory")
+    print("CV Loaded to Memory")
