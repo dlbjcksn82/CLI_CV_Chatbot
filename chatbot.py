@@ -10,14 +10,16 @@ load_cv()
 llm_chain = prompt_template | llm | StrOutputParser()
 chat_history = []
 
+
 def chat_with_gemma(prompt):
     print("Getting a response from the LLM......")
 
     # Retreive relevant CV information
     relevant_cv_info = retrieve_releveant_cv_sections(prompt)
 
-    # keep last 3 exchanges in the prompt to aviod making the prompt too long
-    history_text = "\n".join(chat_history[-6:]) # only keeps last 3 exchanges (6 messages user + AI)
+    # Keep last 3 exchanges in the prompt to avoid making the prompt too long
+    # only keeps last 3 exchanges (6 messages user + AI)
+    history_text = "\n".join(chat_history[-6:])
 
     response = llm_chain.invoke({
         "chat_history": history_text,
